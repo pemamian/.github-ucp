@@ -33,4 +33,4 @@ _Please select one or more categories that apply to this change._
 
 ## Screenshots / Logs (if applicable)
 
-<!-- If applicable, add screenshots or log output to help explain your changes. -->
+<!-- If applicable, add screenshots or log output to help explain your changes. For any edits to the rendering of UCP.dev content, a screenshot is appreciated; for fixes, a before/after comparison is especially helpful for reviewers. -->
