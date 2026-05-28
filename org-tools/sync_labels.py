@@ -15,7 +15,6 @@ repositories in an organization.
 
 import argparse
 import logging
-import os
 import re
 import sys
 from typing import Any, Dict, List, Optional, Set
@@ -54,9 +53,7 @@ def parse_yaml_labels(file_path: str) -> List[Dict[str, Any]]:
         color_str = str(color).strip() if color is not None else ""
 
         description = item.get("description", "")
-        description_str = (
-            str(description).strip() if description is not None else ""
-        )
+        description_str = str(description).strip() if description is not None else ""
 
         raw_aliases = item.get("aliases") or []
         aliases: List[str] = []
@@ -134,9 +131,7 @@ def validate_and_check_conflicts(
             existing_color = (existing.get("color") or "").strip().lower()
             existing_desc = existing.get("description") or ""
             existing_aliases = sorted(existing.get("aliases") or [])
-            existing_file = (
-                existing.get("file_path") or "unknown configuration file"
-            )
+            existing_file = existing.get("file_path") or "unknown configuration file"
 
             if (
                 existing_color != color.lower()
@@ -202,8 +197,7 @@ def validate_and_check_conflicts(
         for alias in aliases:
             if alias in seen_names:
                 target_file = (
-                    seen_names[alias].get("file_path")
-                    or "unknown configuration file"
+                    seen_names[alias].get("file_path") or "unknown configuration file"
                 )
                 raise ValueError(
                     f"Conflict: Alias '{alias}' defined for label '{name}' in '{file_path}' "
@@ -329,9 +323,7 @@ def sync_labels(
                     if not dry_run:
                         try:
                             label_obj = existing[alias]
-                            label_obj.edit(
-                                name=name, color=color, description=desc
-                            )
+                            label_obj.edit(name=name, color=color, description=desc)
                             # Update existing map
                             existing[name] = label_obj
                             del existing[alias]
@@ -353,9 +345,7 @@ def sync_labels(
                 )
                 if not dry_run:
                     try:
-                        repo.create_label(
-                            name=name, color=color, description=desc
-                        )
+                        repo.create_label(name=name, color=color, description=desc)
                     except GithubException as e:
                         logger.error(f"    Failed to create label: {e}")
             else:
@@ -380,8 +370,8 @@ def main() -> None:
     description_text = """
 GitHub Label Synchronization Tool.
 
-Note: This tool is strictly ADDITIVE and non-destructive. It will only create 
-missing labels or update matching labels if their properties (color or description) 
+Note: This tool is strictly ADDITIVE and non-destructive. It will only create
+missing labels or update matching labels if their properties (color or description)
 differ from the YAML configurations. It will NEVER delete existing labels from your repositories.
 """
     parser = argparse.ArgumentParser(
@@ -455,9 +445,7 @@ differ from the YAML configurations. It will NEVER delete existing labels from y
         sys.exit(1)
 
     repos_list = (
-        [r.strip() for r in args.repos.split(",") if r.strip()]
-        if args.repos
-        else None
+        [r.strip() for r in args.repos.split(",") if r.strip()] if args.repos else None
     )
     exclude_list = (
         [r.strip() for r in args.exclude_repos.split(",") if r.strip()]

@@ -57,9 +57,7 @@ class CheckedTextTestRunner(unittest.TextTestRunner):
     """A test runner that uses CheckedTextTestResult."""
 
     def _makeResult(self):
-        return CheckedTextTestResult(
-            self.stream, self.descriptions, self.verbosity
-        )
+        return CheckedTextTestResult(self.stream, self.descriptions, self.verbosity)
 
 
 class TestLabelSync(unittest.TestCase):
@@ -197,13 +195,9 @@ class TestLabelSync(unittest.TestCase):
   description: New feature or request
   aliases: feature, request
 """
-        with patch(
-            "builtins.open", unittest.mock.mock_open(read_data=yaml_content)
-        ):
+        with patch("builtins.open", unittest.mock.mock_open(read_data=yaml_content)):
             labels = sync_labels.parse_yaml_labels("dummy.yml")
-            sync_labels.validate_and_check_conflicts(
-                labels, check_file_context=True
-            )
+            sync_labels.validate_and_check_conflicts(labels, check_file_context=True)
 
         self.assertEqual(len(labels), 2)
         self.assertEqual(labels[0]["name"], "bug")
@@ -317,9 +311,7 @@ class TestLabelSync(unittest.TestCase):
             },
         ]
         with self.assertRaises(ValueError) as ctx:
-            sync_labels.validate_and_check_conflicts(
-                labels, check_file_context=True
-            )
+            sync_labels.validate_and_check_conflicts(labels, check_file_context=True)
         self.assertIn(
             "is already defined as a separate label name in the same file",
             str(ctx.exception),
@@ -327,9 +319,7 @@ class TestLabelSync(unittest.TestCase):
 
     def test_live_configuration_files(self):
         """Verify that live general-labels.yml and triage-labels.yml are syntactically valid and conflict-free"""
-        workspace_dir = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..")
-        )
+        workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         general_path = os.path.join(
             workspace_dir,
             "org-tools",
@@ -360,9 +350,7 @@ class TestLabelSync(unittest.TestCase):
                 general_labels, check_file_context=True
             )
         except ValueError as e:
-            self.fail(
-                f"Validation failed inside live 'general-labels.yml': {e}"
-            )
+            self.fail(f"Validation failed inside live 'general-labels.yml': {e}")
 
         try:
             sync_labels.validate_and_check_conflicts(
@@ -384,10 +372,7 @@ class TestLabelSync(unittest.TestCase):
         g_mock = MagicMock()
         mock_github.Github.return_value = g_mock
 
-        org_mock = MagicMock()
-        g_mock.get_organization.side_effect = MockGithubException(
-            404, "Not Found"
-        )
+        g_mock.get_organization.side_effect = MockGithubException(404, "Not Found")
 
         with self.assertRaises(SystemExit):
             sync_labels.verify_access("fail-org", ["some-repo"], "token")

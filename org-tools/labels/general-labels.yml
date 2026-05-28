@@ -23,7 +23,7 @@
   description: New feature or request
 
 - name: github_actions
-  color: '000000'
+  color: "000000"
   description: Pull requests that update GitHub Actions code
 
 - name: governance
