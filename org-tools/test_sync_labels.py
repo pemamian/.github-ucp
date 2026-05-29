@@ -65,19 +65,14 @@ class TestLabelSync(unittest.TestCase):
         mock_github.Github.reset_mock()
 
     def test_merge_labels_resolves_duplicates_correctly(self):
-        """Merge identical duplicate labels correctly without error"""
+        """Merge raises ValueError on any duplicate labels"""
         list_a = [
             {
                 "name": "bug",
                 "color": "111111",
                 "description": "Desc A",
                 "aliases": [],
-            },
-            {
-                "name": "feature",
-                "color": "222222",
-                "description": "Desc B",
-                "aliases": [],
+                "file_path": "general.yml",
             },
         ]
         list_b = [
@@ -86,21 +81,12 @@ class TestLabelSync(unittest.TestCase):
                 "color": "111111",
                 "description": "Desc A",
                 "aliases": [],
-            },
-            {
-                "name": "docs",
-                "color": "444444",
-                "description": "Desc C",
-                "aliases": [],
+                "file_path": "triage.yml",
             },
         ]
-        merged = sync_labels.merge_labels(list_a, list_b)
-        merged_dict = {item["name"]: item for item in merged}
-
-        self.assertEqual(len(merged), 3)
-        self.assertEqual(merged_dict["bug"]["color"], "111111")
-        self.assertEqual(merged_dict["feature"]["color"], "222222")
-        self.assertEqual(merged_dict["docs"]["color"], "444444")
+        with self.assertRaises(ValueError) as ctx:
+            sync_labels.merge_labels(list_a, list_b)
+        self.assertIn("Duplicate label detected for 'bug'", str(ctx.exception))
 
     def test_merge_labels_throws_on_conflicting_duplicates(self):
         """Merge raises ValueError if duplicate label has conflicting color/description"""
@@ -124,7 +110,7 @@ class TestLabelSync(unittest.TestCase):
         ]
         with self.assertRaises(ValueError) as ctx:
             sync_labels.merge_labels(list_a, list_b)
-        self.assertIn("Conflict detected for label 'bug'", str(ctx.exception))
+        self.assertIn("Duplicate label detected for 'bug'", str(ctx.exception))
         self.assertIn("Defined in 'general.yml'", str(ctx.exception))
         self.assertIn("Defined in 'triage.yml'", str(ctx.exception))
 

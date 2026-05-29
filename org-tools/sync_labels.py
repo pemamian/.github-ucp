@@ -137,16 +137,11 @@ def validate_and_check_conflicts(
             existing_aliases = sorted(existing.get("aliases") or [])
             existing_file = existing.get("file_path") or "unknown configuration file"
 
-            if (
-                existing_color != color.lower()
-                or existing_desc != desc
-                or existing_aliases != sorted(aliases)
-            ):
-                raise ValueError(
-                    f"Conflict detected for label '{name}':\n"
-                    f"  Defined in '{existing_file}': Color #{existing_color}, Desc '{existing_desc}', Aliases {existing_aliases}\n"
-                    f"  Defined in '{file_path}': Color #{color}, Desc '{desc}', Aliases {aliases}"
-                )
+            raise ValueError(
+                f"Duplicate label detected for '{name}':\n"
+                f"  Defined in '{existing_file}': Color #{existing_color}, Desc '{existing_desc}', Aliases {existing_aliases}\n"
+                f"  Defined in '{file_path}': Color #{color}, Desc '{desc}', Aliases {aliases}"
+            )
         else:
             seen_names[name] = label
 
