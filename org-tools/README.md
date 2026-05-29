@@ -71,6 +71,10 @@ If you want to rename an existing label (e.g., from `bug` to `type/bug`) without
 
 This tool is designed to run easily with **`uv`**, which handles dependencies automatically.
 
+### 🔑 Prerequisites (Token Permissions)
+
+Before running the tool, ensure your GitHub Personal Access Token (`--token`) has proper access to the organization and its repositories and manage labels.
+
 ### 1. Dry Run (Preview Changes)
 
 By default, the tool runs in Dry-Run mode to preview operations safely without making live changes:
