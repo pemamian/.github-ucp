@@ -2,6 +2,8 @@
 
 A local Python CLI utility to synchronize label configurations from central YAML files to GitHub organization repositories.
 
+Note that this script only changes the Label name/color/description and avoids any manipulation of label assignment to issues or pull requests.
+
 ---
 
 ## 📝 Configuration Format
@@ -24,12 +26,21 @@ Each YAML configuration file expects a list of label objects:
 - **`description`** (Optional): A short description of the label.
 - **`aliases`** (Optional): A list of previous names. If found, the tool will perform an in-place rename to the target `name` on GitHub, preserving all existing Issue/PR assignments.
 
+> **Conflict Validation Policy:**
+>
+> | Config Scenario        | Example Case                                                 | Result                               |
+> | :--------------------- | :----------------------------------------------------------- | :----------------------------------- |
+> | **Duplicate Names**    | Label `bug` in File A and Label `bug` in File B              | ❌ **Forbidden** (Duplicate Error)   |
+> | **Name-Alias Overlap** | Label `type/bug` has Alias `bug`, AND Label `bug` is defined | ❌ **Forbidden** (Conflict Error)    |
+> | **Shared Aliases**     | Label `type/bug` and `defect` both have Alias `issue`        | ❌ **Forbidden** (Conflict Error)    |
+> | **Cyclic Redirects**   | Label A has alias B, Label B has alias A                     | ❌ **Forbidden** (Cyclic Loop Error) |
+
 ### 🔄 In-Place Label Renaming Example
 
 If you want to rename an existing label (e.g., from `bug` to `type/bug`) without losing any of the issues or PRs currently associated with it:
 
-1. Define the new target **`name`** as `type/bug`.
-2. Add the old label name `bug` inside the **`aliases`** list:
+1. Define the new target **`name`** (e.g. `type/bug`) that does not exist already.
+2. Add the old label name (e.g. `bug`) inside the **`aliases`** list:
 
 ```yaml
 - name: "type/bug"
@@ -44,9 +55,11 @@ If you want to rename an existing label (e.g., from `bug` to `type/bug`) without
 - **If `type/bug` does NOT exist in the repository, but `bug` DOES exist:** The script will rename `bug` to `type/bug` in-place. All issues and pull requests previously tagged with `bug` will now be automatically tagged with `type/bug`!
 - **If `type/bug` ALREADY exists in the repository:** The script will update `type/bug` (color/description) to match your configuration. However, to prevent destructive API failures, it **will not** automatically delete `bug`.
 - **What to do if BOTH exist on GitHub:**
+  This script does not support merging labels because of destructive side effects.
   If both `bug` and `type/bug` already exist, the rename call is safely skipped to prevent API errors. If you want to merge them:
   1. In GitHub, filter issues by `label:bug`, select all, and bulk-add the `type/bug` label.
   2. Go to GitHub's repository label settings and manually delete the old `bug` label.
+     This will prevent any accidental merge of labels which could have sever consequences on underlying issues or pull requests.
 
 > [!NOTE]
 > **Why this safe approach?**
