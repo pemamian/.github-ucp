@@ -218,6 +218,14 @@ def merge_labels(
     """
     Merge two lists of label dicts. Validates the entire combined set first for consistency and conflicts before merging.
     """
+
+    # validate each label list individually (duplicate validation for merge)
+    try:
+        validate_and_check_conflicts(list_a, check_file_context=True)
+        validate_and_check_conflicts(list_b, check_file_context=True)
+    except Exception as e:
+        logger.error(f"Error parsing or verifying configuration files: {e}")
+        sys.exit(1)
     # 1. Validate the aggregated list of all loaded labels first
     all_labels = list_a + list_b
     validate_and_check_conflicts(all_labels)
@@ -428,6 +436,7 @@ differ from the YAML configurations. It will NEVER delete existing labels from y
         )
 
     try:
+        # initial validation while loading files
         general_labels = parse_yaml_labels(args.general_config)
         validate_and_check_conflicts(general_labels, check_file_context=True)
 
