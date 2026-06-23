@@ -25,12 +25,11 @@ from pr_models import (
 class ValidationLogger:
     """Logs the validation result and creates the summary file."""
 
-    # TODO: update this link when moved to UniversalCommerceProtocol repo
     GUIDE_URL = (
-        "https://github.com/agentic-commerce/.github-org-tools/blob/main/"
+        "https://github.com/Universal-Commerce-Protocol/.github/blob/main/"
         "org-tools/governance/docs/validation_report.md"
     )
-    ISSUE_URL = "https://github.com/Universal-Commerce-Protocol/.github"
+    ISSUE_URL = "https://github.com/Universal-Commerce-Protocol/.github/issues"
 
     def __init__(self, result: ValidationResult):
         self.result = result

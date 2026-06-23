@@ -39,10 +39,10 @@ HELP_SUFFIX = (
     "---\n"
     "\n"
     "💡 **Need help?** For a detailed explanation of this report and how to resolve "
-    "failures, see the [Governance Gate Validation Guide](https://github.com/agentic-commerce/.github-org-tools/blob/main/org-tools/governance/docs/validation_report.md).\n"
+    "failures, see the [Governance Gate Validation Guide](https://github.com/Universal-Commerce-Protocol/.github/blob/main/org-tools/governance/docs/validation_report.md).\n"
     "\n"
     "If you suspect a bug or issue with this validator script, please "
-    "[report an issue in the .github repository](https://github.com/Universal-Commerce-Protocol/.github)."
+    "[report an issue in the .github repository](https://github.com/Universal-Commerce-Protocol/.github/issues)."
 )
 
 

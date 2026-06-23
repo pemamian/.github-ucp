@@ -7,11 +7,6 @@ on:
         required: true
         type: string
         description: "Path to the governance rules configuration file"
-      central_repo:
-        required: false
-        type: string
-        default: ".github-org-tools"
-        description: "Name of the central organization tools repository"
     secrets:
       ORG_READ_TOKEN:
         required: true
@@ -25,13 +20,13 @@ jobs:
     steps:
       # 1. Check out the caller repository (the PR code)
       - name: Check out PR code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       # 2. Check out the central governance scripts from the central repository
       - name: Check out central governance scripts
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
-          repository: ${{ github.repository_owner }}/${{ inputs.central_repo }}
+          repository: ${{ github.repository_owner }}/.github
           path: .github-central
           token: ${{ secrets.ORG_READ_TOKEN }}
 
@@ -80,7 +75,7 @@ jobs:
 
       # 5. Post the static Commit Status to the GitHub API with a clickable log link
       - name: Post Static Status Check
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             // Read the exit code from the previous step

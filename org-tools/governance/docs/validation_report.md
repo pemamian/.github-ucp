@@ -28,7 +28,21 @@ The top of the report displays one of the following statuses, indicating the ove
   - **How to resolve:** Refer to the **Global PR Summary** and **File-by-File Breakdown** sections below to see which approvals are missing. The submitter should simply wait for the required reviewers to be assigned and to submit their approvals. Do not manually assign reviewers, request reviews, or ping reviewers.
 - **`## 🔴 FAILURE: Unknown validation failure.`**
   - **What it means:** An unexpected error or system exception occurred during validation.
-  - **How to resolve:** Check the CI pipeline logs and please **[file an issue in the .github repository](https://github.com/Universal-Commerce-Protocol/.github/issues/new)**
+  - **How to resolve:** Check the CI pipeline logs and please **[file an issue in the .github repository](https://github.com/Universal-Commerce-Protocol/.github/issues/new?template=bug-report.yml)**
+
+---
+
+## 🚀 How to Resolve a Failing Governance Gate
+
+If your PR governance gate check is failing, follow these steps to resolve it:
+
+1.  **Check for Draft Status**: If the status header is `🔴 FAILURE: Pull Request is in draft status.`, click **"Ready for review"** in GitHub.
+2.  **Check for Changes Requested**: If the status header is `🔴 FAILURE: An authorized reviewer has requested changes.`, locate their review, address their feedback, and request a re-review or ask them to approve/dismiss their review once resolved.
+3.  **Identify Missing Approvals**: Look at the **Global PR Summary** to find the requirements marked **🔴 No**.
+4.  **Wait for Reviewer Assignments and Approvals**:
+    - The DevOps team is responsible for routing and assigning the correct eligible reviewers.
+    - **Do not** manually search for, assign, or request reviews from users yourself.
+    - **Do not** ping assigned reviewers. Simply wait for the required reviews and approvals to be completed.
 
 ---
 
@@ -84,7 +98,7 @@ This section shows the validation status of every single changed file. This is e
 
 ### How Rules are Matched to Files:
 
-1.  **Rule Matching**: The validator compares the file path against the glob patterns defined in your governance configuration file (e.g., `rules/ucp-rules.yml`).
+1.  **Rule Matching**: The validator compares the file path against the glob patterns defined in your governance configuration file (e.g., `rules/python-sdk-rules.yml`).
 2.  **Cumulative Rules**: If a file matches multiple rules, it must satisfy the requirements of **all** matching rules.
 3.  **Fallback**: If a file does not match any custom rule in the configuration, the catch-all `fallback` requirement is applied.
 
@@ -104,20 +118,6 @@ For example, if the hierarchy is defined as:
 - A requirement for **`team 'maintainers' or higher in the UCP governance hierarchy`** (Level 2+) can be satisfied by approvals from members of `maintainers`, `tech-council`, or `governance-council`.
 - A requirement for **`team 'tech-council' or higher in the UCP governance hierarchy`** (Level 3+) can be satisfied by approvals from members of `tech-council` or `governance-council`.
 - A requirement for an exact team (e.g., **`team 'devops-maintainers'`**) must be approved by an explicit member of that team, regardless of hierarchy.
-
----
-
-## 🚀 How to Resolve a Failing Governance Gate
-
-If your PR governance gate check is failing, follow these steps to resolve it:
-
-1.  **Check for Draft Status**: If the status header is `🔴 FAILURE: Pull Request is in draft status.`, click **"Ready for review"** in GitHub.
-2.  **Check for Changes Requested**: If the status header is `🔴 FAILURE: An authorized reviewer has requested changes.`, locate their review, address their feedback, and request a re-review or ask them to approve/dismiss their review once resolved.
-3.  **Identify Missing Approvals**: Look at the **Global PR Summary** to find the requirements marked **🔴 No**.
-4.  **Wait for Reviewer Assignments and Approvals**:
-    - The DevOps team is responsible for routing and assigning the correct eligible reviewers.
-    - **Do not** manually search for, assign, or request reviews from users yourself.
-    - **Do not** ping assigned reviewers. Simply wait for the required reviews and approvals to be completed.
 
 ---
 
