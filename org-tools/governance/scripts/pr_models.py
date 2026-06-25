@@ -72,6 +72,23 @@ class User:
     teams: set[str]
     level: int
 
+    @classmethod
+    def create(cls, username: str, memberships: "TeamMemberships") -> "User":
+        """Resolve a username into a rich User domain object."""
+        username_lower = username.lower()
+        user_teams = {
+            team
+            for team, members in memberships.members_by_team.items()
+            if username_lower in members
+        }
+
+        # Calculate their max hierarchy level
+        max_level = max((t.level for t in user_teams), default=0)
+
+        # Map Team objects to their string names for the User dataclass
+        team_names = {t.name for t in user_teams}
+        return cls(username=username_lower, teams=team_names, level=max_level)
+
 
 class RequirementTargetType(Enum):
     """Represents the type of requirement target (exact team vs. hierarchical min team)."""
@@ -93,7 +110,9 @@ class RuleRequirement:
             raise ValueError("min_approvals must be an integer")
         if self.min_approvals <= 0:
             raise ValueError("min_approvals must be a positive integer")
-        if (self.team is None) == (self.min_team is None):
+        if (self.team is None and self.min_team is None) or (
+            self.team is not None and self.min_team is not None
+        ):
             raise ValueError(
                 "RuleRequirement must specify exactly one of 'team' or 'min_team'"
             )
@@ -219,18 +238,22 @@ class PullRequest:
 
 @dataclass(frozen=True)
 class TeamMemberships:
-    """Stores a map of team slugs to their members' GitHub usernames."""
+    """Stores a map of Team objects to their members' GitHub usernames."""
 
-    members_by_team: dict[str, set[str]]
+    members_by_team: dict[Team, set[str]]
 
     @classmethod
-    def create(cls, members_by_team: dict[str, set[str]]) -> "TeamMemberships":
+    def create(
+        cls, members_by_team: dict[str, set[str]], teams: dict[str, Team]
+    ) -> "TeamMemberships":
         # Normalize to lowercase. GitHub usernames and team slugs are case-insensitive.
         # Reference: https://docs.github.com/en/rest/teams/teams?apiVersion=2026-03-10#get-a-team-by-name
-        normalized = {
-            team.lower(): {member.lower() for member in members}
-            for team, members in members_by_team.items()
-        }
+        normalized = {}
+        for team_slug, members in members_by_team.items():
+            team_obj = teams.get(team_slug.lower())
+            if team_obj is None:
+                team_obj = Team.create(name=team_slug, level=0)
+            normalized[team_obj] = {member.lower() for member in members}
         return cls(members_by_team=normalized)
 
 

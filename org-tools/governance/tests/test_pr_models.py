@@ -30,6 +30,7 @@ from pr_models import (
     RuleRequirement,
     Team,
     RequirementTargetType,
+    User,
     merge_requirements,
 )
 
@@ -72,15 +73,51 @@ class TestPRModels(unittest.TestCase):
             members_by_team={
                 "Tech-Council": {"Alice", "BOB"},
                 "ADMINS": {"charlie", "Dave"},
-            }
+            },
+            teams={
+                "tech-council": Team.create("tech-council", 3),
+                "admins": Team.create("admins", 2),
+            },
         )
         self.assertEqual(
             memberships.members_by_team,
             {
-                "tech-council": {"alice", "bob"},
-                "admins": {"charlie", "dave"},
+                Team.create("tech-council", 3): {"alice", "bob"},
+                Team.create("admins", 2): {"charlie", "dave"},
             },
         )
+
+    def test_user_create_factory(self):
+        """Test that User.create resolves teams, level, and normalizes username."""
+        teams = {
+            "tech-council": Team.create("tech-council", 3),
+            "admins": Team.create("admins", 2),
+        }
+        memberships = TeamMemberships.create(
+            members_by_team={
+                "tech-council": {"alice", "bob"},
+                "admins": {"bob", "charlie"},
+            },
+            teams=teams,
+        )
+
+        # User in multiple teams, max level should be the highest (3)
+        user_bob = User.create("BOB", memberships)
+        self.assertEqual(user_bob.username, "bob")
+        self.assertEqual(user_bob.teams, {"tech-council", "admins"})
+        self.assertEqual(user_bob.level, 3)
+
+        # User in one team
+        user_alice = User.create("Alice", memberships)
+        self.assertEqual(user_alice.username, "alice")
+        self.assertEqual(user_alice.teams, {"tech-council"})
+        self.assertEqual(user_alice.level, 3)
+
+        # User in no teams
+        user_dave = User.create("dave", memberships)
+        self.assertEqual(user_dave.username, "dave")
+        self.assertEqual(user_dave.teams, set())
+        self.assertEqual(user_dave.level, 0)
 
     def test_merge_requirements(self):
         """Test that merge_requirements correctly merges requirements."""

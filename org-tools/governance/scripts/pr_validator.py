@@ -51,7 +51,7 @@ from validation_logger import ValidationLogger
 class RepoName(Enum):
     """Supported repository names mapping to governance rules."""
 
-    PYTHON_SDK = "python-sdk"
+    PYTHON_SDK = "UniversalCommerceProtocol/python-sdk"
 
 
 REPO_RULES_MAPPING = {
@@ -87,7 +87,9 @@ class GitHubClient:
                 raise RuntimeError(
                     f"Could not fetch members for team '{team_slug}': {e}"
                 ) from e
-        return TeamMemberships.create(members_by_team=members_by_team)
+        return TeamMemberships.create(
+            members_by_team=members_by_team, teams=config.teams
+        )
 
     def fetch_pull_request(self, repo_name: str, pr_number: int) -> PullRequest:
         """Fetch PR files, reviews, and requested reviewers from GitHub.
@@ -227,24 +229,6 @@ class PullRequestValidator:
             file_statuses=file_statuses,
         )
 
-    def _to_user(self, username: str) -> User:
-        """Resolve a username into a rich User domain object."""
-        user_teams = {
-            team_name
-            for team_name, members in self.memberships.members_by_team.items()
-            if username in members
-        }
-
-        # Calculate their max hierarchy level
-        max_level = 0
-        for team_name in user_teams:
-            team_info = self.config.teams.get(team_name)
-            level = team_info.level if team_info is not None else 0
-            if level > max_level:
-                max_level = level
-
-        return User(username=username, teams=user_teams, level=max_level)
-
     def _evaluate_requirement(
         self,
         req: RuleRequirement,
@@ -252,8 +236,8 @@ class PullRequestValidator:
         requested_users_set: set[str],
     ) -> RequirementStatus:
         """Calculate and return status for a requirement under the Venn Diagram model."""
-        approver_users = [self._to_user(u) for u in approver_usernames]
-        assigned_users = [self._to_user(u) for u in requested_users_set]
+        approver_users = [User.create(u, self.memberships) for u in approver_usernames]
+        assigned_users = [User.create(u, self.memberships) for u in requested_users_set]
 
         approvers = [u.username for u in approver_users if req.is_satisfied_by(u)]
         assigned_count = sum(1 for u in assigned_users if req.is_satisfied_by(u))
@@ -265,6 +249,22 @@ class PullRequestValidator:
             is_satisfied=approved_count >= req.min_approvals,
             approvers=sorted(approvers),
         )
+
+    def _evaluate_requirements(
+        self,
+        requirements: list[RuleRequirement],
+        approver_usernames: set[str],
+        assigned_usernames: set[str],
+    ) -> list[RequirementStatus]:
+        """Evaluate each requirement's approvals and assignments count under the Venn Diagram model."""
+        requirement_statuses = []
+        for req in requirements:
+            status = self._evaluate_requirement(
+                req, approver_usernames, assigned_usernames
+            )
+            requirement_statuses.append(status)
+
+        return requirement_statuses
 
     def _get_authorized_reviewers(
         self, requirements: list[RuleRequirement]
@@ -278,7 +278,7 @@ class PullRequestValidator:
 
         authorized = set()
         for username in all_users:
-            user = self._to_user(username)
+            user = User.create(username, self.memberships)
             for req in requirements:
                 if req.is_satisfied_by(user):
                     authorized.add(username)
@@ -289,18 +289,21 @@ class PullRequestValidator:
         self, pr: PullRequest
     ) -> tuple[set[str], set[str]]:
         """Resolve valid approvals set and requested reviewers set for a PR."""
-        assigned_usernames = set(pr.assigned_user_names)
+        assigned = set(pr.assigned_user_names)
         for team in pr.assigned_team_names:
-            assigned_usernames.update(self.memberships.members_by_team.get(team, set()))
+            if team_obj := self.config.teams.get(team):
+                assigned.update(self.memberships.members_by_team.get(team_obj, set()))
 
-        latest_reviews = pr.latest_actionable_reviews_by_username
-        approver_usernames = {
-            user
-            for user, state in latest_reviews.items()
-            if state == ReviewState.APPROVED
-            and (user != pr.author or pr.author in self.config.proxy_reviewers)
-        }
-        return approver_usernames, assigned_usernames
+        approvers = set()
+        for user, state in pr.latest_actionable_reviews_by_username.items():
+            if state == ReviewState.APPROVED:
+                if user != pr.author:
+                    approvers.add(user)
+            else:
+                assigned.add(user)
+
+        assigned.difference_update(approvers)
+        return approvers, assigned
 
     def _evaluate_file_statuses(
         self,
@@ -325,22 +328,6 @@ class PullRequestValidator:
             )
         return file_statuses
 
-    def _evaluate_requirements(
-        self,
-        requirements: list[RuleRequirement],
-        approver_usernames: set[str],
-        assigned_usernames: set[str],
-    ) -> list[RequirementStatus]:
-        """Evaluate each requirement's approvals and assignments count under the Venn Diagram model."""
-        requirement_statuses = []
-        for req in requirements:
-            status = self._evaluate_requirement(
-                req, approver_usernames, assigned_usernames
-            )
-            requirement_statuses.append(status)
-
-        return requirement_statuses
-
 
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     """Parse command line arguments."""
@@ -359,21 +346,16 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         help="GitHub Repository name (e.g. 'your-organization/your-repo').",
     )
     parser.add_argument("--pr", type=int, required=True, help="Pull Request number.")
-    parser.add_argument(
-        "--repo-name",
-        required=True,
-        help="The name of the repository (e.g. 'ucp').",
-    )
     return parser.parse_args(args)
 
 
 def run_validation(args: argparse.Namespace) -> ValidationResult:
     """Execute the core validation flow."""
     try:
-        repo_enum = RepoName(args.repo_name)
+        repo_enum = RepoName(args.repo)
     except ValueError as e:
         raise ValueError(
-            f"Invalid repository name '{args.repo_name}'. Must be one of: "
+            f"Invalid repository name '{args.repo}'. Must be one of: "
             f"{[e.value for e in RepoName]}"
         ) from e
 
