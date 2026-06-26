@@ -22,6 +22,7 @@
 """Pull Request validator using governance rules and team memberships under the Venn Diagram model."""
 
 import argparse
+import os
 import sys
 
 from github import Auth, Github, GithubException
@@ -336,16 +337,30 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--pr", type=int, required=True, help="Pull Request number.")
     parser.add_argument(
         "--rules-file",
-        required=True,
-        help="Path to the governance rules YAML file.",
+        help="Path to the governance rules YAML file. If not provided, resolved via --repo mapping.",
     )
     return parser.parse_args(args)
 
 
 def run_validation(args: argparse.Namespace) -> ValidationResult:
     """Execute the core validation flow."""
+    if args.rules_file:
+        rules_file = args.rules_file
+    else:
+        # Resolve rules file path by convention: rules/<repo-suffix>-rules.yml
+        repo_suffix = args.repo.split("/")[-1]
+        rules_file = (
+            f".github-central/org-tools/governance/rules/{repo_suffix}-rules.yml"
+        )
+
+    if not os.path.exists(rules_file):
+        raise FileNotFoundError(
+            f"Governance rules file not found at '{rules_file}'. "
+            f"Please ensure it exists or specify a custom path using --rules-file."
+        )
+
     # 1. Load config
-    config = GovernanceConfigParser().parse_file(args.rules_file)
+    config = GovernanceConfigParser().parse_file(rules_file)
 
     # 2. Authenticate and fetch data
     auth = Auth.Token(args.token)

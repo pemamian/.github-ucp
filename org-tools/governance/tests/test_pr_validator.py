@@ -813,17 +813,43 @@ class TestPRValidatorMain(unittest.TestCase):
     """Tests for the main function of pr_validator."""
 
     @patch("pr_validator.sys.exit")
+    @patch("pr_validator.print")
+    @patch("pr_validator.os.path.exists")
+    @patch("pr_validator.argparse.ArgumentParser.parse_args")
+    def test_main_missing_rules_file_fallback(
+        self, mock_parse_args, mock_exists, mock_print, mock_exit
+    ):
+        """Test main fails when resolved convention rules file does not exist."""
+        mock_args = MagicMock()
+        mock_args.repo = "Universal-Commerce-Protocol/non-existent-repo"
+        mock_args.rules_file = None
+        mock_parse_args.return_value = mock_args
+        mock_exists.return_value = False
+        mock_exit.side_effect = SystemExit(1)
+
+        with self.assertRaises(SystemExit):
+            main()
+
+        mock_exit.assert_called_once_with(1)
+        mock_print.assert_any_call(
+            "❌ ERROR: Governance rules file not found at '.github-central/org-tools/governance/rules/non-existent-repo-rules.yml'. Please ensure it exists or specify a custom path using --rules-file.",
+            file=sys.stderr,
+        )
+
+    @patch("pr_validator.sys.exit")
     @patch("pr_validator.ValidationLogger")
     @patch("pr_validator.PullRequestValidator")
     @patch("pr_validator.GitHubClient")
     @patch("pr_validator.Github")
     @patch("pr_validator.Auth.Token")
+    @patch("pr_validator.os.path.exists")
     @patch("pr_validator.GovernanceConfigParser")
     @patch("pr_validator.argparse.ArgumentParser.parse_args")
-    def test_main_success(
+    def test_main_convention_success(
         self,
         mock_parse_args,
         mock_parser_class,
+        mock_exists,
         mock_token,
         mock_github_class,
         mock_github_client_class,
@@ -831,14 +857,74 @@ class TestPRValidatorMain(unittest.TestCase):
         mock_logger_class,
         mock_exit,
     ):
-        """Test main succeeds when rules-file is provided."""
+        """Test main succeeds and resolves rules file path by convention when rules-file is not provided."""
         mock_args = MagicMock()
         mock_args.token = "token"
         mock_args.org = "org"
         mock_args.repo = "Universal-Commerce-Protocol/python-sdk"
         mock_args.pr = 123
-        mock_args.rules_file = "my-rules.yml"
+        mock_args.rules_file = None
         mock_parse_args.return_value = mock_args
+        mock_exists.return_value = True
+        mock_exit.side_effect = SystemExit(0)
+
+        # Mock parse_file to return a dummy config
+        mock_parser = MagicMock()
+        mock_parser_class.return_value = mock_parser
+        dummy_config = MagicMock()
+        mock_parser.parse_file.return_value = dummy_config
+
+        # Mock gateway
+        mock_gateway = MagicMock()
+        mock_github_client_class.return_value = mock_gateway
+
+        # Mock validation result to be mergeable
+        mock_validator = MagicMock()
+        mock_validator_class.return_value = mock_validator
+        mock_result = MagicMock()
+        mock_result.is_mergeable = True
+        mock_result.mergeable_reason = None
+        mock_validator.validate.return_value = mock_result
+
+        with self.assertRaises(SystemExit):
+            main()
+
+        # Check parse_file was called with the convention-resolved path
+        mock_parser.parse_file.assert_called_once_with(
+            ".github-central/org-tools/governance/rules/python-sdk-rules.yml"
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @patch("pr_validator.sys.exit")
+    @patch("pr_validator.ValidationLogger")
+    @patch("pr_validator.PullRequestValidator")
+    @patch("pr_validator.GitHubClient")
+    @patch("pr_validator.Github")
+    @patch("pr_validator.Auth.Token")
+    @patch("pr_validator.os.path.exists")
+    @patch("pr_validator.GovernanceConfigParser")
+    @patch("pr_validator.argparse.ArgumentParser.parse_args")
+    def test_main_with_rules_file(
+        self,
+        mock_parse_args,
+        mock_parser_class,
+        mock_exists,
+        mock_token,
+        mock_github_class,
+        mock_github_client_class,
+        mock_validator_class,
+        mock_logger_class,
+        mock_exit,
+    ):
+        """Test main succeeds with a custom rules file, bypassing repo mapping."""
+        mock_args = MagicMock()
+        mock_args.token = "token"
+        mock_args.org = "org"
+        mock_args.repo = "Universal-Commerce-Protocol/arbitrary-repo"
+        mock_args.pr = 123
+        mock_args.rules_file = "custom-rules.yml"
+        mock_parse_args.return_value = mock_args
+        mock_exists.return_value = True
         mock_exit.side_effect = SystemExit(0)
 
         # Mock parse_file to return a dummy config
@@ -863,8 +949,8 @@ class TestPRValidatorMain(unittest.TestCase):
             main()
 
         self.assertEqual(cm.exception.code, 0)
-        # Check parse_file was called with the provided rules file
-        mock_parser.parse_file.assert_called_once_with("my-rules.yml")
+        # Check parse_file was called with the custom rules file
+        mock_parser.parse_file.assert_called_once_with("custom-rules.yml")
         mock_exit.assert_called_once_with(0)
 
 
