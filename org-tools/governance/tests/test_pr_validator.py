@@ -503,7 +503,9 @@ class TestPullRequestValidator(unittest.TestCase):
         self.assertFalse(status.is_satisfied)
 
         # Directly verify the internal helper resolves the specific usernames
-        approvers, assigned = self.validator._get_all_approvers_and_assigned_usernames(pr)
+        approvers, assigned = self.validator._get_all_approvers_and_assigned_usernames(
+            pr
+        )
         self.assertEqual(approvers, set())
         self.assertEqual(assigned, {"tc-member1", "tc-member2"})
 

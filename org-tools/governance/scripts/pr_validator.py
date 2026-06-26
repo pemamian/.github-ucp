@@ -47,9 +47,6 @@ from pr_models import (
 from validation_logger import ValidationLogger
 
 
-
-
-
 class GitHubClient:
     """Handles all interactions with the GitHub API."""
 
