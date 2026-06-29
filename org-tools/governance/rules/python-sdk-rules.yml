@@ -11,7 +11,7 @@ rules:
     requires:
       # Strictly Governance Council (L4)
       - team: "governance-council"
-        min_approvals: 2
+        min_approvals: 1
 
   # ---------------------------------------------------------
   # Infrastructure, Tooling & Configuration
@@ -32,14 +32,14 @@ rules:
       # Grants access to devops (L1), maintainers (L2), tech-council (L3),
       # and governance-council (L4)
       - min_team: "devops-maintainers"
-        min_approvals: 2
+        min_approvals: 1
 
 fallback:
   requires:
     # Default for all files (*).
     # Strictest rule possible
     - min_team: "governance-council"
-      min_approvals: 2
+      min_approvals: 1
 
 proxy_reviewers:
   - amithanda
