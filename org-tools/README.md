@@ -1,4 +1,4 @@
-# GitHub Organization Profile & Workflow Tools
+# GitHub Organization-Wide Tools
 
 This directory contains CLI utilities and configuration files for organization-wide metadata syncing, label management, and pull request governance.
 
